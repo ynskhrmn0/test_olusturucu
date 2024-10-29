@@ -33,20 +33,25 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     try {
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: currentImagePath!,
-        aspectRatioPresets: [
-          CropAspectRatioPreset.square,
-          CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
-        ],
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Görsel Kırpma',
             toolbarColor: Theme.of(context).primaryColor,
             toolbarWidgetColor: Colors.white,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.original,
+            ],
           ),
           IOSUiSettings(
             title: 'Görsel Kırpma',
+            aspectRatioPresets: [
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.original,
+            ],
           ),
         ],
       );
@@ -136,7 +141,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                       onPressed: selectedAnswer == null
                           ? null
                           : () {
-                              final provider = Provider.of<ExamProvider>(context,
+                              final provider = Provider.of<ExamProvider>(
+                                  context,
                                   listen: false);
                               provider.addQuestion(
                                 Question(
