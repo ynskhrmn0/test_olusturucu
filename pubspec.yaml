@@ -1,0 +1,27 @@
+name: test_olusturucu
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  file_picker: ^5.2.10
+  pdf: ^3.8.4
+  path_provider: ^2.0.15
+  image_picker: ^0.8.7+5
+  image_cropper: ^4.0.1
+  provider: ^6.0.5
+  syncfusion_flutter_pdf: ^20.4.54
+  syncfusion_flutter_pdfviewer: ^20.4.54
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
