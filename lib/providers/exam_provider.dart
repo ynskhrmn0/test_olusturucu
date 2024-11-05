@@ -4,36 +4,81 @@ class Question {
   final String imagePath;
   final String answer;
   final Rect cropRect;
+  final String examDescription;
+  final double questionSpacing;
 
-  Question({
+  const Question({
     required this.imagePath,
     required this.answer,
     required this.cropRect,
+    this.examDescription = '',
+    this.questionSpacing = 10,
   });
+
+  // Question sınıfına copyWith metodu ekliyoruz
+  Question copyWith({
+    String? imagePath,
+    String? answer,
+    Rect? cropRect,
+    String? examDescription,
+    double? questionSpacing,
+  }) {
+    return Question(
+      imagePath: imagePath ?? this.imagePath,
+      answer: answer ?? this.answer,
+      cropRect: cropRect ?? this.cropRect,
+      examDescription: examDescription ?? this.examDescription,
+      questionSpacing: questionSpacing ?? this.questionSpacing,
+    );
+  }
 }
 
 class ExamProvider with ChangeNotifier {
   List<Question> _questions = [];
   bool _includeAnswerKey = false;
   String _examTitle = '';
+  String? _examDescription = '';
+  double? _questionSpacing;
 
-  List<Question> get questions => _questions;
+  // Getters'ı immutable yapıyoruz
+  List<Question> get questions => List.unmodifiable(_questions);
   bool get includeAnswerKey => _includeAnswerKey;
   String get examTitle => _examTitle;
+  String? get examDescription => _examDescription;
+  double get questionSpacing => _questionSpacing ?? 10.0;
+
+  // Optimize edilmiş setters
+  void setExamDescription(String description) {
+     _examDescription = description;
+    notifyListeners();
+  }
+
+  void setQuestionSpacing(double spacing) {
+    if (_questionSpacing != spacing) {
+      _questionSpacing = spacing.clamp(10.0, 100.0); // Sınırları belirliyoruz
+      notifyListeners();
+    }
+  }
 
   void addQuestion(Question question) {
-    _questions.add(question);
-    notifyListeners();
+    if (question.imagePath.isNotEmpty && question.answer.isNotEmpty) {
+      _questions = [..._questions, question];
+      notifyListeners();
+    }
   }
 
   void removeQuestion(int index) {
-    _questions.removeAt(index);
-    notifyListeners();
+    if (index >= 0 && index < _questions.length) {
+      _questions = List.from(_questions)..removeAt(index);
+      notifyListeners();
+    }
   }
 
   void setIncludeAnswerKey(bool value) {
-    _includeAnswerKey = value;
-    notifyListeners();
+    if (_includeAnswerKey != value) {
+      _includeAnswerKey = value;
+      notifyListeners();
+    }
   }
 
   void setExamTitle(String title) {
@@ -41,10 +86,39 @@ class ExamProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void reorderQuestions(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final Question item = _questions.removeAt(oldIndex);
+    _questions.insert(newIndex, item);
+    notifyListeners();
+  }
+
+  // Soruları güncellemek için yeni method
+  void updateQuestion(int index, Question updatedQuestion) {
+    if (index >= 0 && index < _questions.length) {
+      _questions = List.from(_questions)..[index] = updatedQuestion;
+      notifyListeners();
+    }
+  }
+
   void clear() {
-    _questions.clear();
+    _questions = [];
     _examTitle = '';
     _includeAnswerKey = false;
+    _examDescription = '';
+    _questionSpacing = null;
     notifyListeners();
+  }
+
+  // Tek bir soru için cevap güncelleme metodu
+  void updateQuestionAnswer(int index, String newAnswer) {
+    if (index >= 0 && index < _questions.length) {
+      final question = _questions[index];
+      _questions = List.from(_questions)
+        ..[index] = question.copyWith(answer: newAnswer);
+      notifyListeners();
+    }
   }
 }
