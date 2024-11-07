@@ -417,19 +417,17 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     );
   }
 
+
   Future<void> _generatePDF(
       BuildContext context, ExamProvider examProvider) async {
-        int currentPageCount = 1;
     final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
-
     final ttf = pw.Font.ttf(fontData);
-
     final pdf = pw.Document();
-
     final theme = pw.ThemeData.withFont(
       base: ttf,
       bold: ttf,
     );
+    
 
     String sanitizeFileName(String fileName) {
       final Map<String, String> turkishChars = {
@@ -501,8 +499,9 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     }
 
     int currentPage = 0;
+
     // Footer builder remains the same
-    pw.Widget buildFooter(int currentPageCount, List<String> answers) {
+    pw.Widget buildFooter(int currentPage, List<String> answers) {
       return pw.Container(
         width: pageWidth,
         padding: pw.EdgeInsets.all(10),
@@ -532,8 +531,10 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                 border: pw.Border.all(),
               ),
               alignment: pw.Alignment.center,
-              child: pw.Text('${currentPageCount}', // pageNumber + 1 eklendi
-                  style: pw.TextStyle(fontSize: 12)),
+              child: pw.Text(
+                '${currentPage + 1}', // pageNumber + 1 eklendi
+                style: pw.TextStyle(fontSize: 12),
+              ),
             ),
           ],
         ),
@@ -619,7 +620,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
             leftColumnHeight + totalHeight <= availableHeight) {
           leftColumn.add(questionWidget);
           leftColumnHeight += totalHeight;
-          pageAnswers.add('${currentQuestion + 1}: ${question.answer}');
+          pageAnswers.add('${currentQuestion + 1}-${question.answer}');
           currentQuestion++;
           continue;
         }
@@ -631,7 +632,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
         if (rightColumnHeight + totalHeight <= availableHeight) {
           rightColumn.add(questionWidget);
           rightColumnHeight += totalHeight;
-          pageAnswers.add('${currentQuestion + 1}: ${question.answer}');
+          pageAnswers.add('${currentQuestion + 1}-${question.answer}');
           currentQuestion++;
         } else {
           break;
@@ -699,8 +700,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         ],
                       ),
                     ),
-                    pw.SizedBox(height: 5), // Azaltıldı
-                    buildFooter(currentPageCount, pageAnswers),
+                    buildFooter(currentPage, pageAnswers),
                   ],
                 ),
               ],
@@ -708,32 +708,26 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
           },
         ),
       );
-      currentPageCount == currentPageCount + 1;
-      currentPage++;
-  }
 
-    // PDF kaydetme kodu aynı kalır
-    try {
-      final output = await getApplicationDocumentsDirectory();
-      final sanitizedTitle = sanitizeFileName(examProvider.examTitle);
-      final file = File('${output.path}/$sanitizedTitle.pdf');
+      currentPage++;
+    }
+
+    final downloadsDirectory = await getDownloadsDirectory();
+    if (downloadsDirectory != null) {
+      final String sanitizedTitle = sanitizeFileName(examProvider.examTitle);
+      final pdfPath = '${downloadsDirectory.path}/$sanitizedTitle.pdf';
+      final file = File(pdfPath);
       await file.writeAsBytes(await pdf.save());
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PDF başarıyla kaydedildi: ${file.path}'),
-          duration: Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'TAMAM',
-            onPressed: () {},
-          ),
+          content: Text('PDF başarıyla oluşturuldu ve kaydedildi: $pdfPath'),
         ),
       );
-    } catch (e) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PDF oluşturulurken bir hata oluştu: $e'),
-          backgroundColor: Colors.red,
+          content: Text('İndirilenler dizini bulunamadı.'),
         ),
       );
     }

@@ -1,11 +1,19 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/rendering.dart';
+
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+
 import 'dart:ui' as ui;
+
 import 'dart:io';
+
 import 'package:path_provider/path_provider.dart';
+
 import 'package:test_olusturucu/screens/exam_creation_screen.dart';
+
 import 'selection_screen.dart';
 
 class PDFViewerScreen extends StatefulWidget {
@@ -19,10 +27,15 @@ class PDFViewerScreen extends StatefulWidget {
 
 class _PDFViewerScreenState extends State<PDFViewerScreen> {
   final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
+
   bool isSelectionMode = false;
+
   Offset? startPosition;
+
   Offset? currentPosition;
+
   final GlobalKey _boundaryKey = GlobalKey();
+
   List<Rect> savedSelections = [];
 
   @override
@@ -33,7 +46,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
         actions: [
           TextButton.icon(
             icon: Icon(Icons.check_circle, color: Colors.white),
-            label: Text('Seçimi Tamamla', style: TextStyle(color: Colors.white)),
+            label:
+                Text('Seçimi Tamamla', style: TextStyle(color: Colors.white)),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -51,11 +65,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
             onPressed: () {
               setState(() {
                 isSelectionMode = !isSelectionMode;
+
                 if (!isSelectionMode) {
                   startPosition = null;
+
                   currentPosition = null;
                 }
               });
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -97,24 +114,29 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                       }
                     }
                   : null,
-              child: Stack(
-                children: [
-                  SfPdfViewer.file(
-                    File(widget.filePath),
-                    key: _pdfViewerKey,
-                    onPageChanged: (PdfPageChangedDetails details) {
-                      setState(() {
-                        startPosition = null;
-                        currentPosition = null;
-                        savedSelections.clear();
-                      });
-                    },
-                  ),
-
-                ],
+              child: GestureDetector(
+                onVerticalDragUpdate: isSelectionMode ? (_) {} : null,
+                onHorizontalDragUpdate: isSelectionMode ? (_) {} : null,
+                child: SfPdfViewer.file(
+                  File(widget.filePath),
+                  key: _pdfViewerKey,
+                  onPageChanged: (PdfPageChangedDetails details) {
+                    setState(() {
+                      startPosition = null;
+                      currentPosition = null;
+                      savedSelections.clear();
+                    });
+                  },
+                  canShowScrollHead:
+                      !isSelectionMode, // Scroll head'i devre dışı bırak
+                  enableDoubleTapZooming:
+                      !isSelectionMode, // Çift dokunarak yakınlaştırmayı devre dışı bırak
+                ),
               ),
             ),
-            if (isSelectionMode && startPosition != null && currentPosition != null)
+            if (isSelectionMode &&
+                startPosition != null &&
+                currentPosition != null)
               CustomPaint(
                 painter: SelectionPainter(
                   startPosition!,
@@ -131,30 +153,45 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
     try {
       if (startPosition == null || currentPosition == null) return;
 
-      final RenderRepaintBoundary boundary =
-          _boundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final RenderRepaintBoundary boundary = _boundaryKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
 
       double left = startPosition!.dx < currentPosition!.dx
           ? startPosition!.dx
           : currentPosition!.dx;
+
       double top = startPosition!.dy < currentPosition!.dy
           ? startPosition!.dy
           : currentPosition!.dy;
+
       double width = (currentPosition!.dx - startPosition!.dx).abs();
+
       double height = (currentPosition!.dy - startPosition!.dy).abs();
 
+      left += 2;
+
+      top += 2;
+
+      width -= 4;
+
+      height -= 4;
+
       // Seçilen alanı kaydet
+
       savedSelections.add(Rect.fromLTWH(left, top, width, height));
 
       if (width < 10 || height < 10) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lütfen daha büyük bir alan seçin')),
         );
+
         return;
       }
 
       final ui.Image fullImage = await boundary.toImage();
+
       final pictureRecorder = ui.PictureRecorder();
+
       final Canvas canvas = Canvas(pictureRecorder);
 
       canvas.drawImageRect(
@@ -173,8 +210,10 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
 
       if (byteData != null) {
         final tempDir = await getTemporaryDirectory();
+
         final tempFile = File(
             '${tempDir.path}/selected_area_${DateTime.now().millisecondsSinceEpoch}.png');
+
         await tempFile.writeAsBytes(byteData.buffer.asUint8List());
 
         if (mounted) {
@@ -186,7 +225,9 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
                 onSaved: () {
                   setState(() {
                     isSelectionMode = false;
+
                     startPosition = null;
+
                     currentPosition = null;
                   });
                 },
@@ -207,6 +248,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
 
 class SelectionPainter extends CustomPainter {
   final Offset startPosition;
+
   final Offset currentPosition;
 
   SelectionPainter(this.startPosition, this.currentPosition);
@@ -224,7 +266,9 @@ class SelectionPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final rect = Rect.fromPoints(startPosition, currentPosition);
+
     canvas.drawRect(rect, paint);
+
     canvas.drawRect(rect, strokePaint);
   }
 
