@@ -17,6 +17,10 @@ dependencies:
   provider: ^6.0.5
   syncfusion_flutter_pdf: ^27.1.57
   syncfusion_flutter_pdfviewer: ^27.1.57
+  flutter_lints: ^5.0.0
+  permission_handler: ^11.3.1
+  flutter_file_dialog: ^3.0.2
+
 
 dev_dependencies:
   flutter_test:
@@ -33,3 +37,10 @@ flutter:
     - family: Roboto
       fonts:
         - asset: assets/fonts/Roboto-Regular.ttf
+
+permission_handler:
+  android:
+    package: com.example.your_app_name
+    permissions:
+      - WRITE_EXTERNAL_STORAGE
+      - READ_EXTERNAL_STORAGE

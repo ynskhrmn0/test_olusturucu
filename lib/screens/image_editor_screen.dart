@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:provider/provider.dart';
+import 'package:test_olusturucu/screens/exam_creation_screen.dart';
 import '../providers/exam_provider.dart';
 import 'preview_screen.dart';
 import 'dart:io';
@@ -82,17 +83,6 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             icon: Icon(Icons.crop),
             onPressed: isLoading ? null : _cropImage,
           ),
-          IconButton(
-            icon: Icon(Icons.check),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PreviewScreen(),
-                ),
-              );
-            },
-          ),
         ],
       ),
       body: Stack(
@@ -151,13 +141,23 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                                   cropRect: Rect.zero,
                                 ),
                               );
-                              Navigator.pop(context);
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ExamCreationScreen(),
+                                ),
+                              );
                             },
                       child: Text('Kaydet'),
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ExamCreationScreen(),
+                          ),
+                        );
                       },
                       child: Text('İptal'),
                       style: TextButton.styleFrom(

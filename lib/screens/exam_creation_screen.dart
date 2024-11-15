@@ -1,13 +1,75 @@
 // exam_creation_screen.dart
+
+import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/services.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import '../providers/exam_provider.dart';
+
 import 'dart:io';
+
 import 'package:pdf/pdf.dart';
+
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
+
 import 'home_screen.dart';
+
+String sanitizeFileName(String fileName) {
+  final Map<String, String> turkishChars = {
+    'ı': 'i',
+    'ğ': 'g',
+    'ü': 'u',
+    'ş': 's',
+    'ö': 'o',
+    'ç': 'c',
+    'İ': 'I',
+    'Ğ': 'G',
+    'Ü': 'U',
+    'Ş': 'S',
+    'Ö': 'O',
+    'Ç': 'C',
+  };
+
+  String result = fileName;
+
+  turkishChars.forEach((key, value) {
+    result = result.replaceAll(key, value);
+  });
+
+  // Dosya adı için uygun olmayan karakterleri temizle
+
+  result = result.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+
+  // Birden fazla alt çizgiyi tek alt çizgiye dönüştür
+
+  result = result.replaceAll(RegExp(r'_{2,}'), '_');
+
+  // Baştaki ve sondaki alt çizgileri kaldır
+
+  result = result.trim().replaceAll(RegExp(r'^_+|_+$'), '');
+
+  return result;
+}
+
+class SaveHelper {
+  static Future<void> save(List<int> bytes, String fileName) async {
+    String? directory = await FilePicker.platform.getDirectoryPath();
+
+    if (directory != null) {
+      final File file = File('$directory/$fileName');
+
+      if (file.existsSync()) {
+        await file.delete();
+      }
+
+      await file.writeAsBytes(bytes);
+    }
+  }
+}
 
 class ExamCreationScreen extends StatefulWidget {
   @override
@@ -16,14 +78,18 @@ class ExamCreationScreen extends StatefulWidget {
 
 class _ExamCreationScreenState extends State<ExamCreationScreen> {
   final TextEditingController _titleController = TextEditingController();
+
   final TextEditingController _descriptionController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final examProvider = Provider.of<ExamProvider>(context, listen: false);
+
       _titleController.text = examProvider.examTitle;
+
       _descriptionController.text = examProvider.examDescription!;
     });
   }
@@ -31,7 +97,9 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
   @override
   void dispose() {
     _titleController.dispose();
+
     _descriptionController.dispose();
+
     super.dispose();
   }
 
@@ -44,6 +112,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
           icon: Icon(Icons.arrow_back),
           onPressed: () {
             Provider.of<ExamProvider>(context, listen: false).clear();
+
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => HomeScreen()),
               (route) => false,
@@ -89,9 +158,9 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         SizedBox(height: 16),
                         Slider(
                           value: examProvider.questionSpacing ?? 10,
-                          min: 10,
-                          max: 100,
-                          divisions: 18,
+                          min: 5,
+                          max: 55,
+                          divisions: 5,
                           label:
                               '${examProvider.questionSpacing?.toInt() ?? 10}px',
                           onChanged: (value) =>
@@ -189,10 +258,12 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                       },
                       onReorder: (oldIndex, newIndex) {
                         examProvider.reorderQuestions(oldIndex, newIndex);
+
                         setState(() {}); // UI'ı yenile
                       },
                       itemBuilder: (context, index) {
                         final question = examProvider.questions[index];
+
                         return Dismissible(
                           key: ValueKey('${question.imagePath}_$index'),
                           direction: DismissDirection.endToStart,
@@ -227,14 +298,19 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                               child: Text("")),
                           onDismissed: (direction) {
                             // Soruyu kaydet (geri alma için)
+
                             final deletedQuestion = question;
+
                             final deletedIndex = index;
 
                             // Soruyu sil
+
                             examProvider.removeQuestion(index);
+
                             setState(() {}); // UI'ı yenile
 
                             // Snackbar göster
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Soru başarıyla silindi'),
@@ -243,7 +319,9 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                                   label: 'GERİ AL',
                                   onPressed: () {
                                     // Soruyu geri ekle
+
                                     examProvider.addQuestion(deletedQuestion);
+
                                     setState(() {}); // UI'ı yenile
                                   },
                                 ),
@@ -251,6 +329,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                             );
 
                             // Eğer son soru silindiyse dialogu kapat
+
                             if (examProvider.questions.isEmpty) {
                               Navigator.of(context).pop();
                             }
@@ -338,6 +417,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // Silme butonu
+
                                   IconButton(
                                     icon: Icon(Icons.delete, color: Colors.red),
                                     onPressed: () async {
@@ -368,7 +448,9 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
 
                                       if (delete == true) {
                                         final deletedQuestion = question;
+
                                         examProvider.removeQuestion(index);
+
                                         setState(() {}); // UI'ı yenile
 
                                         ScaffoldMessenger.of(context)
@@ -382,6 +464,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                                               onPressed: () {
                                                 examProvider.addQuestion(
                                                     deletedQuestion);
+
                                                 setState(() {}); // UI'ı yenile
                                               },
                                             ),
@@ -394,8 +477,11 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                                       }
                                     },
                                   ),
+
                                   SizedBox(width: 10),
+
                                   // Sürükleme tutacağı
+
                                   ReorderableDragStartListener(
                                     index: index,
                                     child: Text(""),
@@ -417,17 +503,18 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     );
   }
 
-
   Future<void> _generatePDF(
       BuildContext context, ExamProvider examProvider) async {
     final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+
     final ttf = pw.Font.ttf(fontData);
+
     final pdf = pw.Document();
+
     final theme = pw.ThemeData.withFont(
       base: ttf,
       bold: ttf,
     );
-    
 
     String sanitizeFileName(String fileName) {
       final Map<String, String> turkishChars = {
@@ -455,11 +542,15 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     }
 
     final pageFormat = PdfPageFormat.a4;
+
     final pageWidth = pageFormat.availableWidth;
+
     final columnWidth = pageWidth / 2; // İki eşit sütun
+
     final questionSpacing = examProvider.questionSpacing?.toDouble() ?? 10.0;
 
     // Header builder remains the same
+
     pw.Widget buildHeader({bool includeDescription = false}) {
       return pw.Container(
         width: pageWidth,
@@ -501,6 +592,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     int currentPage = 0;
 
     // Footer builder remains the same
+
     pw.Widget buildFooter(int currentPage, List<String> answers) {
       return pw.Container(
         width: pageWidth,
@@ -533,6 +625,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
               alignment: pw.Alignment.center,
               child: pw.Text(
                 '${currentPage + 1}', // pageNumber + 1 eklendi
+
                 style: pw.TextStyle(fontSize: 12),
               ),
             ),
@@ -542,19 +635,27 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     }
 
     // Optimize question widget builder
+
     Future<(pw.Widget, double)> buildQuestionWidget(
         Question question, int index) async {
       final imageBytes = File(question.imagePath).readAsBytesSync();
+
       final image = pw.MemoryImage(imageBytes);
 
       final imageFile = File(question.imagePath);
+
       final imageData = await imageFile.readAsBytes();
+
       final decodedImage = await decodeImageFromList(imageData);
+
       final imageRatio = decodedImage.width / decodedImage.height;
 
       // Görsel genişliği sütun genişliğine göre ayarlandı - daha geniş
+
       final containerWidth = (pageWidth / 2) + 36;
+
       final imageWidth = containerWidth - 36; // Soru numarası için boşluk
+
       final imageHeight = imageWidth / imageRatio;
 
       final questionWidget = pw.Padding(
@@ -571,15 +672,21 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                     pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
               ),
             ),
+
             pw.SizedBox(width: 5), // Minimum boşluk
+
             pw.Expanded(
               child: pw.Image(
                 image,
+
                 width: imageWidth, // Soru numarası için minimal boşluk
+
                 height: imageHeight,
+
                 fit: pw.BoxFit.contain,
               ),
             ),
+
             if (index < examProvider.questions.length - 1)
               pw.SizedBox(height: questionSpacing),
           ],
@@ -593,35 +700,49 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
 
     while (currentQuestion < examProvider.questions.length) {
       final bool isFirstPage = currentPage == 0;
+
       final headerHeight =
           isFirstPage && examProvider.examDescription?.isNotEmpty == true
               ? 100.0
               : 60.0;
+
       final footerHeight = examProvider.includeAnswerKey ? 60.0 : 30.0;
+
       final availableHeight =
           pageFormat.availableHeight - headerHeight - footerHeight - 40;
 
       List<pw.Widget> leftColumn = [];
+
       List<pw.Widget> rightColumn = [];
+
       List<String> pageAnswers = [];
 
       double leftColumnHeight = 0;
+
       double rightColumnHeight = 0;
+
       bool isLeftColumnFull = false;
 
       // Soruları sütunlara yerleştirme mantığı güncellendi
+
       while (currentQuestion < examProvider.questions.length) {
         final question = examProvider.questions[currentQuestion];
+
         final (questionWidget, questionHeight) =
             await buildQuestionWidget(question, currentQuestion);
+
         final totalHeight = questionHeight;
 
         if (!isLeftColumnFull &&
             leftColumnHeight + totalHeight <= availableHeight) {
           leftColumn.add(questionWidget);
+
           leftColumnHeight += totalHeight;
+
           pageAnswers.add('${currentQuestion + 1}-${question.answer}');
+
           currentQuestion++;
+
           continue;
         }
 
@@ -631,8 +752,11 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
 
         if (rightColumnHeight + totalHeight <= availableHeight) {
           rightColumn.add(questionWidget);
+
           rightColumnHeight += totalHeight;
+
           pageAnswers.add('${currentQuestion + 1}-${question.answer}');
+
           currentQuestion++;
         } else {
           break;
@@ -648,32 +772,43 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
             return pw.Stack(
               children: [
                 // Ortadaki çizgi - tam ortada ve daha uzun
+
                 pw.Positioned(
                   left: (pageWidth / 2) + 36, // Tam ortalama
+
                   top: headerHeight + 1, // Başlığa daha yakın
+
                   bottom: footerHeight + 1, // Cevap anahtarına daha yakın
+
                   child: pw.Container(
                     width: 1,
                     color: PdfColors.grey,
                   ),
                 ),
+
                 // Ana içerik
+
                 pw.Column(
                   children: [
                     buildHeader(includeDescription: isFirstPage),
+
                     pw.SizedBox(height: 20), // Azaltıldı
+
                     pw.Expanded(
                       child: pw.Row(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
                           // Sol sütun - orta çizgiye yakın
+
                           pw.Padding(
                             padding: pw.EdgeInsets.only(
                                 right: 0), // Minimal sağ boşluk
+
                             child: pw.Container(
                               width:
                                   (pageWidth / 2) + 18, // Sol sütun genişliği
+
                               child: pw.Column(
                                 mainAxisAlignment:
                                     pw.MainAxisAlignment.spaceBetween,
@@ -682,13 +817,17 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                               ),
                             ),
                           ),
+
                           // Sağ sütun - orta çizgiye yakın
+
                           pw.Padding(
                             padding: pw.EdgeInsets.only(
                                 left: 5), // Minimal sol boşluk
+
                             child: pw.Container(
                               width:
                                   (pageWidth / 2) + 18, // Sağ sütun genişliği
+
                               child: pw.Column(
                                 mainAxisAlignment:
                                     pw.MainAxisAlignment.spaceBetween,
@@ -700,6 +839,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         ],
                       ),
                     ),
+
                     buildFooter(currentPage, pageAnswers),
                   ],
                 ),
@@ -712,22 +852,23 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
       currentPage++;
     }
 
-    final downloadsDirectory = await getDownloadsDirectory();
-    if (downloadsDirectory != null) {
-      final String sanitizedTitle = sanitizeFileName(examProvider.examTitle);
-      final pdfPath = '${downloadsDirectory.path}/$sanitizedTitle.pdf';
-      final file = File(pdfPath);
-      await file.writeAsBytes(await pdf.save());
+    final pdfBytes = await pdf.save();
+
+    try {
+      SaveHelper.save(pdfBytes, "${examProvider.examTitle}.pdf");
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PDF başarıyla oluşturuldu ve kaydedildi: $pdfPath'),
+          content: Text('PDF başarıyla kaydedildi'),
+          duration: Duration(seconds: 3),
         ),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('İndirilenler dizini bulunamadı.'),
+          content: Text('PDF kaydedilirken hata oluştu: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
         ),
       );
     }
