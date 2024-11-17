@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_olusturucu/providers/exam_storage.dart';
 
 class Question {
   final String imagePath;
@@ -180,7 +181,52 @@ class ExamProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Tek bir soru için cevap güncelleme metodu
+  Future<void> saveCurrentExam() async {
+    if (_examTitle.isEmpty) return;
+
+    final savedExam = SavedExam(
+      title: _examTitle,
+      description: _examDescription ?? '',
+      questions: _questions
+          .map((q) => {
+                'imagePath': q.imagePath,
+                'answer': q.answer,
+                'cropRect': {
+                  'left': q.cropRect.left,
+                  'top': q.cropRect.top,
+                  'right': q.cropRect.right,
+                  'bottom': q.cropRect.bottom,
+                },
+              })
+          .toList(),
+      includeAnswerKey: _includeAnswerKey,
+      questionSpacing: _questionSpacing ?? 10.0,
+    );
+
+    await ExamStorage.saveExam(savedExam);
+  }
+
+  Future<void> loadSavedExam(SavedExam savedExam) async {
+    _examTitle = savedExam.title;
+    _examDescription = savedExam.description;
+    _includeAnswerKey = savedExam.includeAnswerKey;
+    _questionSpacing = savedExam.questionSpacing;
+
+    _questions = savedExam.questions
+        .map((q) => Question(
+              imagePath: q['imagePath'],
+              answer: q['answer'],
+              cropRect: Rect.fromLTRB(
+                q['cropRect']['left'],
+                q['cropRect']['top'],
+                q['cropRect']['right'],
+                q['cropRect']['bottom'],
+              ),
+            ))
+        .toList();
+
+    notifyListeners();
+  }
 
   void updateQuestionAnswer(int index, String newAnswer) {
     if (index >= 0 && index < _questions.length) {

@@ -853,7 +853,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     }
 
     final pdfBytes = await pdf.save();
-
+    await examProvider.saveCurrentExam();
     try {
       SaveHelper.save(pdfBytes, "${examProvider.examTitle}.pdf");
 
