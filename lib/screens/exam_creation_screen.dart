@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
+import 'package:test_olusturucu/screens/image_editor_screen.dart';
+import 'package:test_olusturucu/screens/pdf_viewer_screen.dart';
+import 'package:test_olusturucu/screens/preview_screen.dart';
 
 import '../providers/exam_provider.dart';
 
@@ -103,11 +106,45 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
     super.dispose();
   }
 
+  Future<void> _pickFile(BuildContext context) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      );
+
+      if (result != null) {
+        final String filePath = result.files.single.path!;
+        final String fileExtension = filePath.split('.').last.toLowerCase();
+
+        if (fileExtension == 'pdf') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PDFViewerScreen(filePath: filePath),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ImageEditorScreen(filePath: filePath),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Dosya açılırken bir hata oluştu: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sınav Oluştur'),
+        title: Text('Test Oluştur'),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
@@ -135,7 +172,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         TextField(
                           controller: _titleController,
                           decoration: InputDecoration(
-                            labelText: 'Sınav Başlığı',
+                            labelText: 'Test Başlığı',
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
@@ -148,7 +185,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         TextField(
                           controller: _descriptionController,
                           decoration: InputDecoration(
-                            labelText: 'Sınav Açıklaması',
+                            labelText: 'Test Açıklaması',
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
@@ -197,16 +234,46 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                       child: ElevatedButton.icon(
                         icon: Icon(Icons.add),
                         label: Text('Soru Ekle'),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => HomeScreen()),
-                        ),
+                        onPressed: () => _pickFile(context),
                         style: ElevatedButton.styleFrom(
                           padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
                   ],
+                ),
+                SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.preview),
+                  label: Text('Testi Önizle'),
+                  onPressed: examProvider.questions.isEmpty
+                      ? null
+                      : () async {
+                          try {
+                            final pdfBytes =
+                                await _generatePreviewPDF(examProvider);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    PDFPreviewScreen(pdfBytes: pdfBytes),
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('PDF oluşturulurken hata oluştu: $e'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue,
+                  ),
                 ),
                 SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -593,7 +660,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
 
     // Footer builder remains the same
 
-    pw.Widget buildFooter(int currentPage, List<String> answers) {
+    pw.Widget buildFooter(pw.Context context, List<String> answers) {
       return pw.Container(
         width: pageWidth,
         padding: pw.EdgeInsets.all(10),
@@ -624,7 +691,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
               ),
               alignment: pw.Alignment.center,
               child: pw.Text(
-                '${currentPage + 1}', // pageNumber + 1 eklendi
+                '${context.pageNumber}', // pageNumber + 1 eklendi
 
                 style: pw.TextStyle(fontSize: 12),
               ),
@@ -669,7 +736,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
               child: pw.Text(
                 '${index + 1}.',
                 style:
-                    pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                    pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
               ),
             ),
 
@@ -768,7 +835,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
           pageFormat: pageFormat,
           theme: theme,
           margin: pw.EdgeInsets.all(20),
-          build: (context) {
+          build: (pw.Context context) {
             return pw.Stack(
               children: [
                 // Ortadaki çizgi - tam ortada ve daha uzun
@@ -840,7 +907,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                       ),
                     ),
 
-                    buildFooter(currentPage, pageAnswers),
+                    buildFooter(context, pageAnswers),
                   ],
                 ),
               ],
@@ -848,7 +915,6 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
           },
         ),
       );
-
       currentPage++;
     }
 
@@ -873,4 +939,356 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
       );
     }
   }
+}
+
+//Önizleme mekanı
+Future<List<int>> _generatePreviewPDF(ExamProvider examProvider) async {
+  final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+
+  final ttf = pw.Font.ttf(fontData);
+
+  final pdf = pw.Document();
+
+  final theme = pw.ThemeData.withFont(
+    base: ttf,
+    bold: ttf,
+  );
+
+  String sanitizeFileName(String fileName) {
+    final Map<String, String> turkishChars = {
+      'ı': 'i',
+      'ğ': 'g',
+      'ü': 'u',
+      'ş': 's',
+      'ö': 'o',
+      'ç': 'c',
+      'İ': 'I',
+      'Ğ': 'G',
+      'Ü': 'U',
+      'Ş': 'S',
+      'Ö': 'O',
+      'Ç': 'C',
+    };
+
+    String result = fileName;
+
+    turkishChars.forEach((key, value) {
+      result = result.replaceAll(key, value);
+    });
+
+    return result;
+  }
+
+  final pageFormat = PdfPageFormat.a4;
+
+  final pageWidth = pageFormat.availableWidth;
+
+  final columnWidth = pageWidth / 2; // İki eşit sütun
+
+  final questionSpacing = examProvider.questionSpacing?.toDouble() ?? 10.0;
+
+  // Header builder remains the same
+
+  pw.Widget buildHeader({bool includeDescription = false}) {
+    return pw.Container(
+      width: pageWidth,
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.black),
+        borderRadius: pw.BorderRadius.circular(10),
+      ),
+      child: pw.Column(
+        mainAxisAlignment: pw.MainAxisAlignment.center,
+        children: [
+          pw.Padding(
+            padding: pw.EdgeInsets.only(top: 8),
+            child: pw.Center(
+              child: pw.Text(
+                examProvider.examTitle,
+                style:
+                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          ),
+          if (includeDescription &&
+              examProvider.examDescription?.isNotEmpty == true) ...[
+            pw.Divider(color: PdfColors.black, thickness: 1),
+            pw.Padding(
+              padding: pw.EdgeInsets.only(bottom: 8),
+              child: pw.Text(
+                examProvider.examDescription!,
+                style: pw.TextStyle(fontSize: 12),
+                textAlign: pw.TextAlign.justify,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  int currentPage = 0;
+
+  // Footer builder remains the same
+
+  pw.Widget buildFooter(pw.Context context, List<String> answers) {
+    return pw.Container(
+      width: pageWidth,
+      padding: pw.EdgeInsets.all(10),
+      child: pw.Row(
+        children: [
+          if (examProvider.includeAnswerKey) ...[
+            pw.Expanded(
+              child: pw.Container(
+                padding: pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(),
+                  borderRadius: pw.BorderRadius.circular(5),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+                  children: answers.map((answer) => pw.Text(answer)).toList(),
+                ),
+              ),
+            ),
+            pw.SizedBox(width: 10),
+          ],
+          pw.Container(
+            width: 30,
+            height: 30,
+            decoration: pw.BoxDecoration(
+              shape: pw.BoxShape.circle,
+              border: pw.Border.all(),
+            ),
+            alignment: pw.Alignment.center,
+            child: pw.Text(
+              '${context.pageNumber}', // pageNumber + 1 eklendi
+
+              style: pw.TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Optimize question widget builder
+
+  Future<(pw.Widget, double)> buildQuestionWidget(
+      Question question, int index) async {
+    final imageBytes = File(question.imagePath).readAsBytesSync();
+
+    final image = pw.MemoryImage(imageBytes);
+
+    final imageFile = File(question.imagePath);
+
+    final imageData = await imageFile.readAsBytes();
+
+    final decodedImage = await decodeImageFromList(imageData);
+
+    final imageRatio = decodedImage.width / decodedImage.height;
+
+    // Görsel genişliği sütun genişliğine göre ayarlandı - daha geniş
+
+    final containerWidth = (pageWidth / 2) + 36;
+
+    final imageWidth = containerWidth - 36; // Soru numarası için boşluk
+
+    final imageHeight = imageWidth / imageRatio;
+
+    final questionWidget = pw.Padding(
+      padding: pw.EdgeInsets.only(bottom: questionSpacing),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Container(
+            width: 12,
+            child: pw.Text(
+              '${index + 1}.',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            ),
+          ),
+
+          pw.SizedBox(width: 5), // Minimum boşluk
+
+          pw.Expanded(
+            child: pw.Image(
+              image,
+
+              width: imageWidth, // Soru numarası için minimal boşluk
+
+              height: imageHeight,
+
+              fit: pw.BoxFit.contain,
+            ),
+          ),
+
+          if (index < examProvider.questions.length - 1)
+            pw.SizedBox(height: questionSpacing),
+        ],
+      ),
+    );
+
+    return (questionWidget, imageHeight + questionSpacing);
+  }
+
+  int currentQuestion = 0;
+
+  while (currentQuestion < examProvider.questions.length) {
+    final bool isFirstPage = currentPage == 0;
+
+    final headerHeight =
+        isFirstPage && examProvider.examDescription?.isNotEmpty == true
+            ? 100.0
+            : 60.0;
+
+    final footerHeight = examProvider.includeAnswerKey ? 60.0 : 30.0;
+
+    final availableHeight =
+        pageFormat.availableHeight - headerHeight - footerHeight - 40;
+
+    List<pw.Widget> leftColumn = [];
+
+    List<pw.Widget> rightColumn = [];
+
+    List<String> pageAnswers = [];
+
+    double leftColumnHeight = 0;
+
+    double rightColumnHeight = 0;
+
+    bool isLeftColumnFull = false;
+
+    // Soruları sütunlara yerleştirme mantığı güncellendi
+
+    while (currentQuestion < examProvider.questions.length) {
+      final question = examProvider.questions[currentQuestion];
+
+      final (questionWidget, questionHeight) =
+          await buildQuestionWidget(question, currentQuestion);
+
+      final totalHeight = questionHeight;
+
+      if (!isLeftColumnFull &&
+          leftColumnHeight + totalHeight <= availableHeight) {
+        leftColumn.add(questionWidget);
+
+        leftColumnHeight += totalHeight;
+
+        pageAnswers.add('${currentQuestion + 1}-${question.answer}');
+
+        currentQuestion++;
+
+        continue;
+      }
+
+      if (!isLeftColumnFull) {
+        isLeftColumnFull = true;
+      }
+
+      if (rightColumnHeight + totalHeight <= availableHeight) {
+        rightColumn.add(questionWidget);
+
+        rightColumnHeight += totalHeight;
+
+        pageAnswers.add('${currentQuestion + 1}-${question.answer}');
+
+        currentQuestion++;
+      } else {
+        break;
+      }
+    }
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: pageFormat,
+        theme: theme,
+        margin: pw.EdgeInsets.all(20),
+        build: (pw.Context context) {
+          return pw.Stack(
+            children: [
+              // Ortadaki çizgi - tam ortada ve daha uzun
+
+              pw.Positioned(
+                left: (pageWidth / 2) + 36, // Tam ortalama
+
+                top: headerHeight + 1, // Başlığa daha yakın
+
+                bottom: footerHeight + 1, // Cevap anahtarına daha yakın
+
+                child: pw.Container(
+                  width: 1,
+                  color: PdfColors.grey,
+                ),
+              ),
+
+              // Ana içerik
+
+              pw.Column(
+                children: [
+                  buildHeader(includeDescription: isFirstPage),
+
+                  pw.SizedBox(height: 20), // Azaltıldı
+
+                  pw.Expanded(
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Sol sütun - orta çizgiye yakın
+
+                        pw.Padding(
+                          padding: pw.EdgeInsets.only(
+                              right: 0), // Minimal sağ boşluk
+
+                          child: pw.Container(
+                            width: (pageWidth / 2) + 18, // Sol sütun genişliği
+
+                            child: pw.Column(
+                              mainAxisAlignment:
+                                  pw.MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: leftColumn,
+                            ),
+                          ),
+                        ),
+
+                        // Sağ sütun - orta çizgiye yakın
+
+                        pw.Padding(
+                          padding:
+                              pw.EdgeInsets.only(left: 5), // Minimal sol boşluk
+
+                          child: pw.Container(
+                            width: (pageWidth / 2) + 18, // Sağ sütun genişliği
+
+                            child: pw.Column(
+                              mainAxisAlignment:
+                                  pw.MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: rightColumn,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  buildFooter(context, pageAnswers),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    currentPage++;
+  }
+
+  final pdfBytes = await pdf.save();
+
+  // ... _generatePDF fonksiyonundaki diğer kodlar ...
+
+  return await pdf.save();
 }
