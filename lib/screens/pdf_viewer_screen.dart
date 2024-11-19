@@ -28,6 +28,8 @@ class PDFViewerScreen extends StatefulWidget {
 class _PDFViewerScreenState extends State<PDFViewerScreen> {
   final GlobalKey<SfPdfViewerState> _pdfViewerKey = GlobalKey();
 
+  final PdfViewerController _pdfController = PdfViewerController();
+
   bool isSelectionMode = false;
 
   Offset? startPosition;
@@ -87,64 +89,104 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
           ),
         ],
       ),
-      body: RepaintBoundary(
-        key: _boundaryKey,
-        child: Stack(
-          children: [
-            Listener(
-              onPointerDown: isSelectionMode
-                  ? (details) {
-                      setState(() {
-                        startPosition = details.localPosition;
-                        currentPosition = details.localPosition;
-                      });
-                    }
-                  : null,
-              onPointerMove: isSelectionMode
-                  ? (details) {
-                      setState(() {
-                        currentPosition = details.localPosition;
-                      });
-                    }
-                  : null,
-              onPointerUp: isSelectionMode
-                  ? (details) async {
-                      if (startPosition != null && currentPosition != null) {
-                        await _captureSelectedArea();
-                      }
-                    }
-                  : null,
-              child: GestureDetector(
-                onVerticalDragUpdate: isSelectionMode ? (_) {} : null,
-                onHorizontalDragUpdate: isSelectionMode ? (_) {} : null,
-                child: SfPdfViewer.file(
-                  File(widget.filePath),
-                  key: _pdfViewerKey,
-                  onPageChanged: (PdfPageChangedDetails details) {
-                    setState(() {
-                      startPosition = null;
-                      currentPosition = null;
-                      savedSelections.clear();
-                    });
-                  },
-                  canShowScrollHead:
-                      !isSelectionMode, // Scroll head'i devre dışı bırak
-                  enableDoubleTapZooming:
-                      !isSelectionMode, // Çift dokunarak yakınlaştırmayı devre dışı bırak
-                ),
+      body: Column(
+        children: [
+          Expanded(
+            child: RepaintBoundary(
+              key: _boundaryKey,
+              child: Stack(
+                children: [
+                  Listener(
+                    onPointerDown: isSelectionMode
+                        ? (details) {
+                            setState(() {
+                              startPosition = details.localPosition;
+
+                              currentPosition = details.localPosition;
+                            });
+                          }
+                        : null,
+                    onPointerMove: isSelectionMode
+                        ? (details) {
+                            setState(() {
+                              currentPosition = details.localPosition;
+                            });
+                          }
+                        : null,
+                    onPointerUp: isSelectionMode
+                        ? (details) async {
+                            if (startPosition != null &&
+                                currentPosition != null) {
+                              await _captureSelectedArea();
+                            }
+                          }
+                        : null,
+                    child: GestureDetector(
+                      onVerticalDragUpdate: isSelectionMode ? (_) {} : null,
+                      onHorizontalDragUpdate: isSelectionMode ? (_) {} : null,
+                      child: SfPdfViewer.file(
+                        File(widget.filePath),
+                        key: _pdfViewerKey,
+                        controller: _pdfController,
+                        onPageChanged: (PdfPageChangedDetails details) {
+                          setState(() {
+                            startPosition = null;
+
+                            currentPosition = null;
+
+                            savedSelections.clear();
+                          });
+                        },
+                        canShowScrollHead: !isSelectionMode,
+                        enableDoubleTapZooming: !isSelectionMode,
+                      ),
+                    ),
+                  ),
+                  if (isSelectionMode &&
+                      startPosition != null &&
+                      currentPosition != null)
+                    CustomPaint(
+                      painter: SelectionPainter(
+                        startPosition!,
+                        currentPosition!,
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (isSelectionMode &&
-                startPosition != null &&
-                currentPosition != null)
-              CustomPaint(
-                painter: SelectionPainter(
-                  startPosition!,
-                  currentPosition!,
-                ),
+          ),
+          if (!isSelectionMode)
+            Container(
+              color: Colors.white70,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.zoom_out),
+                    color: Colors.black,
+                    onPressed: () {
+                      setState(() {
+                        _pdfController.zoomLevel -= 0.25;
+                      });
+                    },
+                  ),
+                  Text(
+                    '${(_pdfController.zoomLevel * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.zoom_in),
+                    color: Colors.black,
+                    onPressed: () {
+                      setState(() {
+                        _pdfController.zoomLevel += 0.25;
+                      });
+                    },
+                  ),
+                ],
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

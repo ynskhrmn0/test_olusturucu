@@ -44,6 +44,8 @@ class ExamStorage {
   static Future<void> saveExam(SavedExam exam) async {
     final prefs = await SharedPreferences.getInstance();
     final savedExams = await getSavedExams();
+
+    savedExams.removeWhere((existingExam) => existingExam.title == exam.title);
     
     savedExams.add(exam);
     
