@@ -1,6 +1,6 @@
-# test_olusturucu
+# Test Olusturucu
 
-Öğrencilerinize kendinizin seçtiği özel sorulardan oluşan bir test mi hazırlamak istiyorsunuz? Öğrencisiniz ve yapamadığınız onca soruyu sadece tek pdf dosyasında düzenli bir şekilde depolamak mı istiyorsunuz? İşte tam size göre ücretsiz bir uygulama. Kullanımı oldukça basit ve sade olduğu gibi reklamlardan uzak huzurlu bir deneyim için harika.
+Öğrencilerinize kendinizin seçtiği özel sorulardan oluşan bir test mi hazırlamak istiyorsunuz? Öğrencisiniz ve yapamadığınız onca soruyu sadece tek pdf dosyasında düzenli bir şekilde depolamak mı istiyorsunuz? İşte tam size göre ücretsiz bir uygulama. Kullanımı oldukça basit ve sade olduğu gibi reklamlardan uzak huzurlu bir deneyim için harika. 
 
 # Gelecek Yenilikler
  > Fotoğraf eklemeden önce kırpma, döndürme gibi seçenkler.
