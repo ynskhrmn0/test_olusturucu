@@ -96,6 +96,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _createNewExam(BuildContext context) {
+    final examProvider = Provider.of<ExamProvider>(context, listen: false);
+    examProvider.clear(); // Clear any existing data
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamCreationScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,19 +127,27 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: savedExams.length,
-                itemBuilder: (context, index) {
-                  final exam = savedExams[index];
-                  return Card(
-                    child: Stack(
-                      children: [
-                        InkWell(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  int crossAxisCount = 2; // Default
+                  if (constraints.maxWidth > 1200) {
+                    crossAxisCount = 6;
+                  } else if (constraints.maxWidth > 800) {
+                    crossAxisCount = 4;
+                  }
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.8, // Adjust for better visual balance
+                    ),
+                    itemCount: savedExams.length,
+                    itemBuilder: (context, index) {
+                      final exam = savedExams[index];
+                      return Card(
+                        child: InkWell(
                           onTap: () async {
                             final examProvider = Provider.of<ExamProvider>(
                               context,
@@ -152,6 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   exam.title,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 16),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
                                   '${exam.questions.length} Soru',
@@ -160,24 +181,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: Colors.grey,
                                   ),
                                 ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.delete_rounded,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _deleteExam(exam.title),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
-                        // Silme butonu
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.delete_rounded,
-                              size: 20,
-                            ),
-                            onPressed: () => _deleteExam(exam.title),
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),

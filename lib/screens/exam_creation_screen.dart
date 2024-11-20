@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import 'package:provider/provider.dart';
 import 'package:test_olusturucu/screens/image_editor_screen.dart';
@@ -81,8 +82,8 @@ class ExamCreationScreen extends StatefulWidget {
 
 class _ExamCreationScreenState extends State<ExamCreationScreen> {
   final TextEditingController _titleController = TextEditingController();
-
   final TextEditingController _descriptionController = TextEditingController();
+  Color _borderColor = Colors.black;
 
   @override
   void initState() {
@@ -95,6 +96,37 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
 
       _descriptionController.text = examProvider.examDescription!;
     });
+  }
+
+  void _showColorPicker() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('PDF Çerçeve Rengi Seç'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: _borderColor,
+              onColorChanged: (Color color) {
+                setState(() {
+                  _borderColor = color;
+                });
+              },
+              showLabel: true,
+              pickerAreaHeightPercent: 0.8,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Tamam'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -193,15 +225,22 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                           },
                         ),
                         SizedBox(height: 16),
-                        Slider(
-                          value: examProvider.questionSpacing ?? 10,
-                          min: 5,
-                          max: 55,
-                          divisions: 5,
-                          label:
-                              '${examProvider.questionSpacing?.toInt() ?? 10}px',
-                          onChanged: (value) =>
-                              examProvider.setQuestionSpacing(value),
+                        Row(
+                          children: [
+                            Text("Sorular arasındaki minimum boşluk:", style: TextStyle(fontSize: 17),),
+                            Expanded(
+                              child: Slider(
+                                value: examProvider.questionSpacing ?? 10,
+                                min: 5,
+                                max: 55,
+                                divisions: 50,
+                                label:
+                                    '${examProvider.questionSpacing?.toInt() ?? 10}px',
+                                onChanged: (value) =>
+                                    examProvider.setQuestionSpacing(value),
+                              ),
+                            ),
+                          ],
                         ),
                         SizedBox(height: 16),
                         SwitchListTile(
@@ -240,6 +279,15 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         ),
                       ),
                     ),
+                    SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: _showColorPicker,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _borderColor,
+                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      ),
+                      child: Icon(Icons.color_lens, color: Colors.white),
+                    ),
                   ],
                 ),
                 SizedBox(height: 16),
@@ -275,7 +323,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                     backgroundColor: Colors.blue,
                   ),
                 ),
-                SizedBox(height: 24),
+                SizedBox(height: 16),
                 ElevatedButton.icon(
                   icon: Icon(Icons.picture_as_pdf),
                   label: Text('PDF Oluştur'),
@@ -622,14 +670,18 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
       return pw.Container(
         width: pageWidth,
         decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: PdfColors.black),
+          border: pw.Border.all(color: PdfColor.fromInt(_borderColor.value)),
           borderRadius: pw.BorderRadius.circular(10),
         ),
         child: pw.Column(
           mainAxisAlignment: pw.MainAxisAlignment.center,
           children: [
+            if (includeDescription &&
+                examProvider.examDescription?.isNotEmpty == true) ...[
+                  pw.SizedBox(height: 8),
+                ],
             pw.Padding(
-              padding: pw.EdgeInsets.only(top: 8),
+              padding: pw.EdgeInsets.only(top: 0),
               child: pw.Center(
                 child: pw.Text(
                   examProvider.examTitle,
@@ -641,7 +693,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
             ),
             if (includeDescription &&
                 examProvider.examDescription?.isNotEmpty == true) ...[
-              pw.Divider(color: PdfColors.black, thickness: 1),
+              pw.Divider(color: PdfColor.fromInt(_borderColor.value), thickness: 1),
               pw.Padding(
                 padding: pw.EdgeInsets.only(bottom: 8),
                 child: pw.Text(
@@ -671,7 +723,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                 child: pw.Container(
                   padding: pw.EdgeInsets.all(10),
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(),
+                    border: pw.Border.all(color: PdfColor.fromInt(_borderColor.value)),
                     borderRadius: pw.BorderRadius.circular(5),
                   ),
                   child: pw.Row(
@@ -687,7 +739,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
               height: 30,
               decoration: pw.BoxDecoration(
                 shape: pw.BoxShape.circle,
-                border: pw.Border.all(),
+                border: pw.Border.all(color: PdfColor.fromInt(_borderColor.value)),
               ),
               alignment: pw.Alignment.center,
               child: pw.Text(
@@ -849,7 +901,7 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
 
                   child: pw.Container(
                     width: 1,
-                    color: PdfColors.grey,
+                    color: PdfColor.fromInt(_borderColor.value),
                   ),
                 ),
 
@@ -999,8 +1051,12 @@ Future<List<int>> _generatePreviewPDF(ExamProvider examProvider) async {
       child: pw.Column(
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
+          if (includeDescription &&
+                examProvider.examDescription?.isNotEmpty == true) ...[
+                  pw.SizedBox(height: 8),
+                ],
           pw.Padding(
-            padding: pw.EdgeInsets.only(top: 8),
+            padding: pw.EdgeInsets.only(top: 0),
             child: pw.Center(
               child: pw.Text(
                 examProvider.examTitle,

@@ -24,6 +24,18 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   void initState() {
     super.initState();
     currentImagePath = widget.filePath;
+    _checkImageFile();
+  }
+
+  Future<void> _checkImageFile() async {
+    if (currentImagePath != null) {
+      final file = File(currentImagePath!);
+      if (!await file.exists()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Görsel dosyası bulunamadı: $currentImagePath')),
+        );
+      }
+    }
   }
 
   Future<void> _cropImage() async {
@@ -32,8 +44,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     });
 
     try {
+      final file = File(currentImagePath!);
+      if (!await file.exists()) {
+        throw Exception('Görsel dosyası bulunamadı: $currentImagePath');
+      }
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: currentImagePath!,
+        compressQuality: 90,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Görsel Kırpma',
@@ -61,10 +78,16 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         setState(() {
           currentImagePath = croppedFile.path;
         });
+      } else {
+        // Kullanıcı kırpma işlemini iptal etti
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kırpma işlemi iptal edildi')),
+        );
       }
     } catch (e) {
+      print('Kırpma hatası: $e'); // Hata detayını konsola yazdır
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kırpma işlemi sırasında bir hata oluştu')),
+        SnackBar(content: Text('Kırpma işlemi sırasında hata: ${e.toString()}')),
       );
     } finally {
       setState(() {

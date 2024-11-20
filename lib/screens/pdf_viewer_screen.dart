@@ -290,28 +290,91 @@ class _PDFViewerScreenState extends State<PDFViewerScreen> {
 
 class SelectionPainter extends CustomPainter {
   final Offset startPosition;
-
   final Offset currentPosition;
 
   SelectionPainter(this.startPosition, this.currentPosition);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.fill;
-
-    final strokePaint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 0.2
-      ..style = PaintingStyle.stroke;
-
     final rect = Rect.fromPoints(startPosition, currentPosition);
 
-    canvas.drawRect(rect, paint);
 
-    canvas.drawRect(rect, strokePaint);
+    // Seçilen alanı şeffaf beyaz ile boya
+    final paint = Paint()
+
+      ..color = Colors.white.withOpacity(0)
+
+      ..strokeWidth = 2.0
+
+      ..style = PaintingStyle.fill;
+
+
+    // Seçili alan için kesikli kenarlık paint
+    final strokePaint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    
+    // Kesikli çizgiyi manuel olarak çiz
+    _drawDashedRect(canvas, rect, strokePaint);
+  }
+
+  void _drawDashedRect(Canvas canvas, Rect rect, Paint paint) {
+    const dashWidth = 5.0;
+    const dashSpace = 5.0;
+    
+    // Üst kenar
+    double start = rect.left;
+    while (start < rect.right) {
+      double end = start + dashWidth;
+      if (end > rect.right) end = rect.right;
+      canvas.drawLine(
+        Offset(start, rect.top),
+        Offset(end, rect.top),
+        paint,
+      );
+      start = end + dashSpace;
+    }
+
+    // Alt kenar
+    start = rect.left;
+    while (start < rect.right) {
+      double end = start + dashWidth;
+      if (end > rect.right) end = rect.right;
+      canvas.drawLine(
+        Offset(start, rect.bottom),
+        Offset(end, rect.bottom),
+        paint,
+      );
+      start = end + dashSpace;
+    }
+
+    // Sol kenar
+    start = rect.top;
+    while (start < rect.bottom) {
+      double end = start + dashWidth;
+      if (end > rect.bottom) end = rect.bottom;
+      canvas.drawLine(
+        Offset(rect.left, start),
+        Offset(rect.left, end),
+        paint,
+      );
+      start = end + dashSpace;
+    }
+
+    // Sağ kenar
+    start = rect.top;
+    while (start < rect.bottom) {
+      double end = start + dashWidth;
+      if (end > rect.bottom) end = rect.bottom;
+      canvas.drawLine(
+        Offset(rect.right, start),
+        Offset(rect.right, end),
+        paint,
+      );
+      start = end + dashSpace;
+    }
   }
 
   @override
