@@ -147,54 +147,58 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemBuilder: (context, index) {
                       final exam = savedExams[index];
                       return Card(
-                        child: InkWell(
-                          onTap: () async {
-                            final examProvider = Provider.of<ExamProvider>(
-                              context,
-                              listen: false,
-                            );
-                            await examProvider.loadSavedExam(exam);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ExamCreationScreen(),
-                              ),
-                            );
-                          },
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.description, size: 40),
-                                SizedBox(height: 8),
-                                Text(
-                                  exam.title,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 16),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  '${exam.questions.length} Soru',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
+                        child: Stack(
+                          children: [
+                            InkWell(
+                              onTap: () async {
+                                final examProvider = Provider.of<ExamProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                await examProvider.loadSavedExam(exam);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ExamCreationScreen(),
                                   ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.delete_rounded,
-                                      size: 20,
+                                );
+                              },
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.description, size: 40),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      exam.title,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 16),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    onPressed: () => _deleteExam(exam.title),
-                                  ),
+                                    Text(
+                                      '${exam.questions.length} Soru',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.delete_rounded,
+                                  size: 20,
+                                ),
+                                onPressed: () => _deleteExam(exam.title),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },

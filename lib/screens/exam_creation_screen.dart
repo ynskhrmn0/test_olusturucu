@@ -227,17 +227,35 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                         SizedBox(height: 16),
                         Row(
                           children: [
-                            Text("Sorular arasındaki minimum boşluk:", style: TextStyle(fontSize: 17),),
+                            Column(
+                              children: [
+                                Text(
+                                  "Sorular arasındaki",
+                                  style: TextStyle(fontSize: 17),
+                                ),
+                                Text(
+                                  "minimum boşluk:",
+                                  style: TextStyle(fontSize: 17),
+                                ),
+                              ],
+                            ),
                             Expanded(
-                              child: Slider(
-                                value: examProvider.questionSpacing ?? 10,
-                                min: 5,
-                                max: 55,
-                                divisions: 50,
-                                label:
-                                    '${examProvider.questionSpacing?.toInt() ?? 10}px',
-                                onChanged: (value) =>
-                                    examProvider.setQuestionSpacing(value),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth:
+                                      1000, 
+                                  maxWidth: double.infinity,
+                                ),
+                                child: Slider(
+                                  value: examProvider.questionSpacing ?? 10,
+                                  min: 5,
+                                  max: 55,
+                                  divisions: 50,
+                                  label:
+                                      '${examProvider.questionSpacing?.toInt() ?? 10}px',
+                                  onChanged: (value) =>
+                                      examProvider.setQuestionSpacing(value),
+                                ),
                               ),
                             ),
                           ],
@@ -284,7 +302,8 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                       onPressed: _showColorPicker,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _borderColor,
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
                       child: Icon(Icons.color_lens, color: Colors.white),
                     ),
@@ -678,8 +697,8 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
           children: [
             if (includeDescription &&
                 examProvider.examDescription?.isNotEmpty == true) ...[
-                  pw.SizedBox(height: 8),
-                ],
+              pw.SizedBox(height: 8),
+            ],
             pw.Padding(
               padding: pw.EdgeInsets.only(top: 0),
               child: pw.Center(
@@ -693,7 +712,8 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
             ),
             if (includeDescription &&
                 examProvider.examDescription?.isNotEmpty == true) ...[
-              pw.Divider(color: PdfColor.fromInt(_borderColor.value), thickness: 1),
+              pw.Divider(
+                  color: PdfColor.fromInt(_borderColor.value), thickness: 1),
               pw.Padding(
                 padding: pw.EdgeInsets.only(bottom: 8),
                 child: pw.Text(
@@ -723,7 +743,8 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
                 child: pw.Container(
                   padding: pw.EdgeInsets.all(10),
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColor.fromInt(_borderColor.value)),
+                    border: pw.Border.all(
+                        color: PdfColor.fromInt(_borderColor.value)),
                     borderRadius: pw.BorderRadius.circular(5),
                   ),
                   child: pw.Row(
@@ -739,7 +760,8 @@ class _ExamCreationScreenState extends State<ExamCreationScreen> {
               height: 30,
               decoration: pw.BoxDecoration(
                 shape: pw.BoxShape.circle,
-                border: pw.Border.all(color: PdfColor.fromInt(_borderColor.value)),
+                border:
+                    pw.Border.all(color: PdfColor.fromInt(_borderColor.value)),
               ),
               alignment: pw.Alignment.center,
               child: pw.Text(
@@ -1052,9 +1074,9 @@ Future<List<int>> _generatePreviewPDF(ExamProvider examProvider) async {
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
           if (includeDescription &&
-                examProvider.examDescription?.isNotEmpty == true) ...[
-                  pw.SizedBox(height: 8),
-                ],
+              examProvider.examDescription?.isNotEmpty == true) ...[
+            pw.SizedBox(height: 8),
+          ],
           pw.Padding(
             padding: pw.EdgeInsets.only(top: 0),
             child: pw.Center(
